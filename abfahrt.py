@@ -82,9 +82,10 @@ class CursesWindow:
 		updating = False
 		delete = False
 		q = mp.Queue()
+		p = None
 		while 1:
 			self.myscreen.clear()
-			if time_for_update == True:
+			if time_for_update == True and p is None:
 				t = datetime.now()
 				p = mp.Process(target=get_departures_queue, args=(self.routes, t, q))
 				p.start()
@@ -111,9 +112,9 @@ class CursesWindow:
 				else:
 					color = curses.color_pair(7)
 				if time_left_sec > 0 and counter < 3:
-					counter += 1
 					time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
-					self.myscreen.addstr(counter*3 + 2, 0, "{:10} \n   -> {:10}: {}".format(start, dest, time_left_str), color)
+					self.myscreen.addstr(counter*3 + 1, 0, "{:10} -> {:10}: {}".format(start, dest, time_left_str), color)
+					counter += 1
 			if delete == True:
 				self.myscreen.addstr(0, 0, "Deleting...", curses.color_pair(5))
 				self.departures.pop(0)
