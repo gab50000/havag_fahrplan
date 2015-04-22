@@ -113,7 +113,7 @@ class CursesWindow:
 				if time_left_sec > 0 and counter < 3:
 					counter += 1
 					time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
-					self.myscreen.addstr(i*3 + 2, 0, "{:10} -> {:10}: {}".format(start, dest, time_left_str), color)
+					self.myscreen.addstr(counter*3 + 2, 0, "{:10} \n   -> {:10}: {}".format(start, dest, time_left_str), color)
 			if delete == True:
 				self.myscreen.addstr(0, 0, "Deleting...", curses.color_pair(5))
 				self.departures.pop(0)
