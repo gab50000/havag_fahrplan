@@ -70,7 +70,7 @@ class CursesWindow:
 		curses.start_color()
 			#~ curses.init_pair(i, self.curses_colors[i], curses.COLOR_BLACK) 
 		for i, color in enumerate(self.curses_colors):
-			curses.init_pair(i, color, curses.COLOR_BLACK) 
+			curses.init_pair(i+1, color, curses.COLOR_BLACK) 
 			
 	def __enter__(self):
 		pass
@@ -80,8 +80,10 @@ class CursesWindow:
 	def run(self):
 		time_for_update = True
 		updating = False
+		delete = False
 		q = mp.Queue()
 		while 1:
+			self.myscreen.clear()
 			if time_for_update == True:
 				t = datetime.now()
 				p = mp.Process(target=get_departures_queue, args=(self.routes, t, q))
@@ -92,14 +94,32 @@ class CursesWindow:
 				try:
 					self.departures = q.get(timeout=0.1)
 					p.join()
-					self.myscreen.addstr(0, 0, "Update finished!", curses.color_pair(1))
+					self.myscreen.addstr(0, 0, "Update finished!", curses.color_pair(4))
 					updating = False
 				except mp.queues.Empty:
-					self.myscreen.addstr(0, 0, "Updating...", curses.color_pair(0))
-			for i, (dept_time, start, dest) in enumerate(self.departures[:3]):
-				time_left = (dept_time - datetime.now()).seconds
-				time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left/3600, (time_left%3600)/60, time_left%60)
-				self.myscreen.addstr(i*3 + 5, 30, "{:>20} -> {:<20} at {:<5}. {}".format(start, dest, dept_time.strftime("%H:%M"), time_left_str), curses.color_pair(3))
+					self.myscreen.addstr(0, 0, "Updating...", curses.color_pair(5))
+			
+			counter = 0
+			for i, (dept_time, start, dest) in enumerate(self.departures):
+				time_left = dept_time - datetime.now()
+				time_left_sec =  int((dept_time - datetime.now()).total_seconds())
+				#choose color depending on time left
+				if time_left_sec > 600:
+					color = curses.color_pair(4)
+				elif time_left_sec > 300:
+					color = curses.color_pair(5)
+				else:
+					color = curses.color_pair(7)
+				if time_left_sec > 0 and counter < 3:
+					counter += 1
+					time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
+					self.myscreen.addstr(i*3 + 2, 0, "{:10} -> {:10}: {}".format(start, dest, time_left_str), color)
+			if delete == True:
+				self.myscreen.addstr(0, 0, "Deleting...", curses.color_pair(5))
+				self.departures.pop(0)
+				delete = False
+			if len(self.departures) < 12:
+				time_for_update = True
 			self.myscreen.refresh()
 			time.sleep(1)
 		
