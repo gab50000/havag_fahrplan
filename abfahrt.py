@@ -9,6 +9,7 @@ from dateutil import parser
 import curses
 import time
 import multiprocessing as mp
+import threading
 import locale
 #necessary for umlaut
 locale.setlocale(locale.LC_ALL,"")
@@ -87,7 +88,8 @@ class CursesWindow:
 			self.myscreen.clear()
 			if time_for_update == True and p is None:
 				t = datetime.now()
-				p = mp.Process(target=get_departures_queue, args=(self.routes, t, q))
+				#~ p = mp.Process(target=get_departures_queue, args=(self.routes, t, q))
+				p = threading.Thread(target=get_departures_queue, args=(self.routes, t, q))
 				p.start()
 				updating = True
 				time_for_update = False
