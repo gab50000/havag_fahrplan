@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import requests as req
 import re
-import bs4
+from lxml import html
 from datetime import datetime, timedelta
 import ipdb
 from dateutil import parser
@@ -23,7 +23,6 @@ def get_next_connections(start, destination, time, debug=False):
 	time_now = "{:02d}:{:02d}".format(dtn.hour, dtn.minute)
 	date_now = "{:02d}.{:02d}.{}".format(dtn.day, dtn.month, dtn.year)
 	url="http://www.havag.com/fahrplan/verbindung"
-	#data = {"from" : "Halle+(Saale),+Triftstr.", "to" : "Halle+(Saale),+lutherstr"}
 	data = {"results[2][2][from]" : "Halle (Saale), {}".format(start), 
 		"results[2][2][to]" : "Halle (Saale), {}".format(destination), 
 		"results[2][2][time_mode]" : "departure", "results[2][2][date]" : "17.04.2015", 
@@ -33,11 +32,11 @@ def get_next_connections(start, destination, time, debug=False):
 
 	headers = {"Content-Type" : "application/x-www-form-urlencoded"}
 	r = req.post(url, data=data, headers=headers)
-	soup = bs4.BeautifulSoup(r.text)
-	connections = soup.find_all("div", class_ = "content-timetable")
+	document = html.fromstring(r.text)
+	connections = document.cssselect("div.content-timetable")
 	departures = []
 	for connection in connections:
-		conn_text = connection.findChildren("li")[1].text
+		conn_text = html.tostring(connection.cssselect("li")[1])
 		if debug == True:
 			print >> logfile, "found connection", conn_text
 		departure = parser.parse(re.findall("\d+\:\d+", conn_text)[0])
