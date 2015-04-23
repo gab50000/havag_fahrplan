@@ -123,7 +123,7 @@ class CursesWindow:
 				except Queue.Empty:
 					if self.debug == True:
 						print >> self.log, "queue was empty. keep updating"
-					self.myscreen.addstr(0, 0, "Updating...", curses.color_pair(5))
+					self.myscreen.addstr(11, 0, "Updating...", curses.color_pair(5))
 			
 			counter = 0
 			for dept_time, start, dest in self.departures:
@@ -139,7 +139,6 @@ class CursesWindow:
 				if time_left_sec > 0 and counter < 3:
 					time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
 					#~ self.myscreen.addstr(counter*3 + 1, 0, "{:10} -> {:10}: {}".format(start, dest, time_left_str), color)
-					self.myscreen.addstr(0, 0, "{:>32}".format(t.strftime("%H:%M")), curses.color_pair(1))
 					self.myscreen.addstr(counter*3 + 2, 0, "{:>14} -> {:14}".format(start[:14], dest[:14]), color)
 					self.myscreen.addstr(counter*3 + 3, 0, "{:^32}".format(time_left_str), color)
 					counter += 1
@@ -152,6 +151,7 @@ class CursesWindow:
 				delete = False
 			if len(self.departures) < 12 and updating == False:
 				time_for_update = True
+			self.myscreen.addstr(0, 0, "{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), curses.color_pair(1))
 			#~ self.myscreen.addstr(30, 0, "dep len: {}, time for update: {}, updating: {}, delete: {}".format(len(self.departures), time_for_update, updating, delete), curses.color_pair(1))
 			self.myscreen.refresh()
 			time.sleep(1)
