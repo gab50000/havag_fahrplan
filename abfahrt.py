@@ -8,7 +8,6 @@ import ipdb
 from dateutil import parser
 import curses
 import time
-import multiprocessing as mp
 import threading
 import locale
 import Queue
@@ -140,6 +139,7 @@ class CursesWindow:
 				if time_left_sec > 0 and counter < 3:
 					time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
 					#~ self.myscreen.addstr(counter*3 + 1, 0, "{:10} -> {:10}: {}".format(start, dest, time_left_str), color)
+					self.myscreen.addstr(0, 0, "{:>32}".format(t.strftime("%H:%M")), curses.color_pair(1))
 					self.myscreen.addstr(counter*3 + 2, 0, "{:>14} -> {:14}".format(start[:14], dest[:14]), color)
 					self.myscreen.addstr(counter*3 + 3, 0, "{:^32}".format(time_left_str), color)
 					counter += 1
