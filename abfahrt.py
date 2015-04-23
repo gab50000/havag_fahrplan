@@ -15,7 +15,9 @@ import Queue
 #necessary for umlaut
 locale.setlocale(locale.LC_ALL,"")
 
-def get_next_connections(start, destination, time):
+def get_next_connections(start, destination, time, debug=False):
+	if debug == True:
+		logfile = open("get_next_connections.log", "a")
 	"""Input: start location, destination, datetime object"""
 	dtn = time
 	time_now = "{:02d}:{:02d}".format(dtn.hour, dtn.minute)
@@ -36,8 +38,12 @@ def get_next_connections(start, destination, time):
 	departures = []
 	for connection in connections:
 		conn_text = connection.findChildren("li")[1].text
+		if debug == True:
+			print >> logfile, "found connection", conn_text
 		departure = parser.parse(re.findall("\d+\:\d+", conn_text)[0])
 		departures.append(departure)
+	if debug == True:
+		logfile.close()
 	return departures
 
 def get_departures(routes):
@@ -53,11 +59,12 @@ def get_departures(routes):
 	next_departures.sort(key=lambda x: (x[0]-datetime.now()).total_seconds())
 	return next_departures
 	
-def get_departures_queue(routes, t, q):
+def get_departures_queue(routes, t, q, debug=False):
+
 	next_departures = []
 	for route in routes:
 		start, dest = route
-		conns = get_next_connections(start, dest, t)
+		conns = get_next_connections(start, dest, t, debug=debug)
 		for c in conns:
 			if c < datetime.now():
 				c += timedelta(days=1)
@@ -80,7 +87,7 @@ class CursesWindow:
 			#~ curses.init_pair(i, self.curses_colors[i], curses.COLOR_BLACK) 
 		for i, color in enumerate(self.curses_colors):
 			curses.init_pair(i+1, color, curses.COLOR_BLACK) 
-			
+
 	def __enter__(self):
 		pass
 	def __exit__(self, type, value, traceback):
@@ -99,7 +106,7 @@ class CursesWindow:
 			self.myscreen.clear()
 			if time_for_update == True:
 				t = datetime.now() + time_shift
-				p = threading.Thread(target=get_departures_queue, args=(self.routes, t, q))
+				p = threading.Thread(target=get_departures_queue, args=(self.routes, t, q, self.debug))
 				p.start()
 				updating = True
 				time_for_update = False
