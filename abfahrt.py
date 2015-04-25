@@ -152,49 +152,9 @@ class CursesWindow:
 			if len(self.departures) < 12 and updating == False:
 				time_for_update = True
 			self.myscreen.addstr(0, 0, "{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), curses.color_pair(1))
-			#~ self.myscreen.addstr(30, 0, "dep len: {}, time for update: {}, updating: {}, delete: {}".format(len(self.departures), time_for_update, updating, delete), curses.color_pair(1))
 			self.myscreen.refresh()
 			time.sleep(1)
-		
-def curses_main(stdscr):
-	while 1:
-		stdscr.addstr(10, 10, "huhu", curses.A_NORMAL)
-		stdscr.refresh()
 
-def curses_routine():
-	try:
-		# Initialize curses
-		stdscr=curses.initscr()
-		# Turn off echoing of keys, and enter cbreak mode,
-		# where no buffering is performed on keyboard input
-		curses.noecho()
-		curses.cbreak()
-		
-		# In keypad mode, escape sequences for special keys
-		# (like the cursor keys) will be interpreted and
-		# a special value like curses.KEY_LEFT will be returned
-		stdscr.keypad(1)
-		curses_main(stdscr)                    # Enter the main loop
-		# Set everything back to normal
-		stdscr.keypad(0)
-		curses.echo()
-		curses.nocbreak()
-		curses.endwin()                 # Terminate curses
-	finally:
-		# In event of error, restore terminal to sane state.
-		stdscr.keypad(0)
-		curses.echo()
-		curses.nocbreak()
-		curses.endwin()
-		#~ traceback.print_exc()           # Print the exception	
-
-def main(*args):
-	routes = [("Triftstr.", "Büschdorf"), ("Triftstr.", "Kröllwitz"), ("Volkspark", "Rannischer Platz"), ("Volkspark", "Pfarrstr.")]
-	curses_routine()
-	
-
-	#~ for nd in next_departures:
-		#~ print nd[0].strftime("%H:%M"), nd[1], "->", nd[2]
 if __name__ == "__main__":
 	cw = CursesWindow(debug=True)
 	with cw:
