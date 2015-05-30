@@ -15,8 +15,9 @@ import Queue
 
 import pygame
 from pygame.locals import *
-#necessary for umlaut
-locale.setlocale(locale.LC_ALL,"")
+# necessary for umlaut
+locale.setlocale(locale.LC_ALL, "")
+
 
 def get_next_connections(start, destination, time, debug=False):
     """"""
@@ -26,13 +27,13 @@ def get_next_connections(start, destination, time, debug=False):
     dtn = time
     time_now = "{:02d}:{:02d}".format(dtn.hour, dtn.minute)
     date_now = "{:02d}.{:02d}.{}".format(dtn.day, dtn.month, dtn.year)
-    url="http://www.havag.com/fahrplan/verbindung"
-    data = {"results[2][2][from]" : "Halle (Saale), {}".format(start.encode("utf-8")),
-        "results[2][2][to]" : "Halle (Saale), {}".format(destination.encode("utf-8")),
-        "results[2][2][time_mode]" : "departure", "results[2][2][date]" : "17.04.2015",
-        "results[2][2][mode]":"connection", "results[2][2][means_of_transport][]":"STR",
-        "results[2][2][from_opt]": "3", "results[2][2][to_opt]": "3",
-        "results[2][2][via_opt]": "1", "results[2][2][time]": time_now, "results[2][2][date]": date_now }
+    url = "http://www.havag.com/fahrplan/verbindung"
+    data = {"results[2][2][from]": "Halle (Saale), {}".format(start.encode("utf-8")),
+            "results[2][2][to]": "Halle (Saale), {}".format(destination.encode("utf-8")),
+            "results[2][2][time_mode]": "departure", "results[2][2][mode]": "connection",
+            "results[2][2][means_of_transport][]": "STR", "results[2][2][from_opt]": "3",
+            "results[2][2][to_opt]": "3", "results[2][2][via_opt]": "1",
+            "results[2][2][time]": time_now, "results[2][2][date]": date_now }
 
     headers = {"Content-Type" : "application/x-www-form-urlencoded"}
     r = req.post(url, data=data, headers=headers)
@@ -41,11 +42,11 @@ def get_next_connections(start, destination, time, debug=False):
     departures = []
     for connection in connections:
         conn_text = html.tostring(connection.cssselect("li")[1])
-        if debug == True:
+        if debug:
             print >> logfile, "found connection", conn_text
         departure = parser.parse(re.findall("\d+\:\d+", conn_text)[0])
         departures.append(departure)
-    if debug == True:
+    if debug:
         logfile.close()
     return departures
 
@@ -85,7 +86,7 @@ def get_departures_queue(routes, t, q, debug=False):
 class CursesWindow:
     def __init__(self, debug=False):
         self.debug = debug
-        if self.debug == True:
+        if self.debug:
             self.log = open("abfahrt.log", "a")
         self.curses_colors = [curses.COLOR_WHITE, curses.COLOR_CYAN, curses.COLOR_BLUE,
                                 curses.COLOR_GREEN, curses.COLOR_YELLOW, curses.COLOR_MAGENTA, curses.COLOR_RED]
@@ -102,7 +103,7 @@ class CursesWindow:
         pass
     def __exit__(self, type, value, traceback):
         curses.endwin()
-        if self.debug == True:
+        if self.debug:
             self.log.close()
 
     def run(self):
@@ -114,26 +115,26 @@ class CursesWindow:
         p = None
         while 1:
             self.myscreen.clear()
-            if time_for_update == True:
+            if time_for_update:
                 t = datetime.now() + time_shift
                 p = threading.Thread(target=get_departures_queue, args=(self.routes, t, q, self.debug))
                 p.start()
                 updating = True
                 time_for_update = False
-                if self.debug == True:
+                if self.debug:
                     print >> self.log, "time for update!"
                     print >> self.log, "time is", t
-            if updating == True:
+            if updating:
                 try:
                     self.departures = q.get(timeout=0.1)
                     p.join()
                     self.myscreen.addstr(0, 0, "Update finished!", curses.color_pair(4))
                     updating = False
-                    if self.debug == True:
+                    if self.debug:
                         print >> self.log, "got {} from thread".format(self.departures)
                 #~ except mp.queues.Empty:
                 except Queue.Empty:
-                    if self.debug == True:
+                    if self.debug:
                         print >> self.log, "queue was empty. keep updating"
                     self.myscreen.addstr(11, 0, "Updating...", curses.color_pair(5))
 
@@ -141,7 +142,7 @@ class CursesWindow:
             for dept_time, start, dest in self.departures:
                 #~ time_left = dept_time - datetime.now() - time_shift
                 time_left_sec =  int((dept_time - datetime.now() - time_shift).total_seconds())
-                #choose color depending on time left
+                # choose color depending on time left
                 if time_left_sec > 600:
                     color = curses.color_pair(4)
                 elif time_left_sec > 300:
@@ -157,7 +158,7 @@ class CursesWindow:
                 else:
                     if time_left_sec < -60:
                         delete = True
-            if delete == True:
+            if delete:
                 self.myscreen.addstr(0, 0, "Deleting...", curses.color_pair(5))
                 self.departures.pop(0)
                 delete = False
@@ -184,8 +185,10 @@ class PygameWindow:
         self.background = self.background.convert()
         self.background.fill((0, 0, 0))
         # f = pygame.font.match_font(u'droidsans')
-        self.font = pygame.font.Font(None, 25)
+        self.fontsize = 30
+        self.font = pygame.font.Font(None, self.fontsize)
         self.xcenter = self.background.get_rect().centerx
+        self.determine_line_positions()
         # self.text = self.font.render("Hello There", 1, (255, 255, 255))
         # textpos = self.text.get_rect()
         # textpos.centerx = self.background.get_rect().centerx
@@ -195,11 +198,19 @@ class PygameWindow:
         t = self.font.render(text, 1, color)
         rect = t.get_rect()
         rect.center = pos
-        self.background.blit(t, (rect.x, rect.y))
+        self.background.blit(t, (rect.x, pos[1]))
 
     def blit_and_flip(self):
         self.screen.blit(self.background, (0, 0))
         pygame.display.flip()
+
+    def determine_line_positions(self):
+        line_no = 240 / self.fontsize
+        offset = self.fontsize / 2
+        self.positions = xrange(offset, 240+offset, self.fontsize)
+        # connection number is line number minus line for time
+        #  minus line for update notification
+        self.connection_no = line_no - 2
 
     def run(self):
         time_shift = timedelta(minutes=0)
@@ -224,7 +235,7 @@ class PygameWindow:
                     self.departures = q.get(timeout=0.1)
                     p.join()
                     # self.myscreen.addstr(0, 0, "Update finished!", curses.color_pair(4))
-                    self.write_text("Update finished!", (0, 240-self.font.get_height()), (255, 255, 255))
+                    self.write_text("Update finished!", (self.xcenter, self.positions[0]), (255, 255, 255))
                     updating = False
                     if self.debug:
                         print >> self.log, "got {} from thread".format(self.departures)
@@ -234,27 +245,25 @@ class PygameWindow:
                     if self.debug:
                         print >> self.log, "queue was empty. keep updating"
                         # self.myscreen.addstr(11, 0, "Updating...", curses.color_pair(5))
-                        self.write_text("Updating...", (0, 240-self.font.get_height()), (255, 255, 255))
+                    self.write_text("Updating...", (self.xcenter, self.positions[0]), (255, 255, 255))
 
 
-            counter = 0
-            for dept_time, start, dest in self.departures:
+            for i, (dept_time, start, dest) in enumerate(self.departures):
                 #~ time_left = dept_time - datetime.now() - time_shift
                 time_left_sec =  int((dept_time - datetime.now() - time_shift).total_seconds())
                 #choose color depending on time left
-                if time_left_sec > 600:
-                    color = (0, 255, 0)
-                elif time_left_sec > 300:
-                    color = (255, 255, 0)
-                else:
-                    color = (255, 0, 0)
-                if time_left_sec > 0 and counter < 3:
+                # if time_left_sec > 600:
+                #     color = (0, 255, 0)
+                # elif time_left_sec > 300:
+                #     color = (255, 255, 0)
+                # else:
+                #     color = (255, 0, 0)
+                if time_left_sec > 0 and i < self.connection_no/2:
                     time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
                     # self.myscreen.addstr(counter*3 + 2, 0, "{:>14} -> {:14}".format(start[:14], dest[:14]), color)
                     # self.myscreen.addstr(counter*3 + 3, 0, "{:^32}".format(time_left_str), color)
-                    self.write_text(u"{:>14} -> {:14}".format(start, dest), (self.xcenter, counter*80 + self.font.get_height()), color)
-                    self.write_text("{:^32}".format(time_left_str), (self.xcenter, counter*80 + 2*self.font.get_height()), color)
-                    counter += 1
+                    self.write_text(u"{:>14} -> {:14}".format(start, dest), (self.xcenter, self.positions[2*i+1]), get_color(time_left_sec))
+                    self.write_text("{:^32}".format(time_left_str), (self.xcenter, self.positions[2*i+2]), get_color(time_left_sec))
                 else:
                     if time_left_sec < -60:
                         delete = True
@@ -266,10 +275,23 @@ class PygameWindow:
             if len(self.departures) < 12 and not updating:
                 time_for_update = True
             # self.myscreen.addstr(0, 0, "{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), curses.color_pair(1))
-            self.write_text("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (0, 0), (255, 255, 255))
+            self.write_text("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (0, self.positions[0]), (255, 255, 255))
             self.blit_and_flip()
             time.sleep(1)
 
+def get_color(time_left_sec):
+    green_time = 1200
+    yellow_time = 600
+    red_time = 300
+    if time_left_sec < red_time:
+        time_color = (255, 0, 0)
+    elif time_left_sec < yellow_time:
+        time_color = (255, int(float(time_left_sec-red_time)/(yellow_time-red_time)*255), 0)
+    elif time_left_sec < green_time:
+        time_color = (int((1-float(time_left_sec-yellow_time)/(green_time-yellow_time))*255), 255, 0)
+    else:
+        time_color = (0, 255, 0)
+    return time_color
 
 if __name__ == "__main__":
     pw = PygameWindow()
