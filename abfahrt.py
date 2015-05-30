@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import os
 import requests as req
 import re
 from lxml import html
@@ -168,6 +169,7 @@ class CursesWindow:
 
 class PygameWindow:
     def __init__(self):
+	os.environ["SDL_FBDEV"] = "/dev/fb1"
         pygame.init()
         self.screen = pygame.display.set_mode((320, 240))
         self.background = pygame.Surface(self.screen.get_size())
