@@ -169,7 +169,9 @@ class CursesWindow:
 
 class PygameWindow:
     def __init__(self):
-	os.environ["SDL_FBDEV"] = "/dev/fb1"
+        os.environ["SDL_FBDEV"] = "/dev/fb1"
+        os.environ["SDL_MOUSEDRV"] = "TSLIB"
+        os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
         pygame.init()
         self.screen = pygame.display.set_mode((320, 240))
         self.background = pygame.Surface(self.screen.get_size())
