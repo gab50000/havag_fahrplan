@@ -189,6 +189,7 @@ class PygameWindow:
         self.font = pygame.font.Font(None, self.fontsize)
         self.xcenter = self.background.get_rect().centerx
         self.y_offset = 0
+        pygame.mouse.set_visible(False)
         # self.determine_line_positions()
         # self.text = self.font.render("Hello There", 1, (255, 255, 255))
         # textpos = self.text.get_rect()
@@ -202,7 +203,6 @@ class PygameWindow:
         self.background.blit(t, (rect.x, pos[1]))
 
     def write_messages(self, text_messages):
-        print self.y_offset
         self.y_offset = min(0, self.y_offset)
         if len(text_messages) > 240/self.fontsize:
             self.y_offset = max(-len(text_messages)*self.fontsize + 240, self.y_offset)
