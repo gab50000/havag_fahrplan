@@ -210,7 +210,7 @@ class PygameWindow:
         self.positions = xrange(offset, 240+offset, self.fontsize)
         # connection number is line number minus line for time
         #  minus line for update notification
-        self.connection_no = line_no - 2
+        self.connection_no = (line_no - 2)/2
 
     def run(self):
         time_shift = timedelta(minutes=0)
@@ -234,47 +234,33 @@ class PygameWindow:
                 try:
                     self.departures = q.get(timeout=0.1)
                     p.join()
-                    # self.myscreen.addstr(0, 0, "Update finished!", curses.color_pair(4))
                     self.write_text("Update finished!", (self.xcenter, self.positions[0]), (255, 255, 255))
                     updating = False
                     if self.debug:
                         print >> self.log, "got {} from thread".format(self.departures)
 
-                    #~ except mp.queues.Empty:
                 except Queue.Empty:
                     if self.debug:
                         print >> self.log, "queue was empty. keep updating"
-                        # self.myscreen.addstr(11, 0, "Updating...", curses.color_pair(5))
                     self.write_text("Updating...", (self.xcenter, self.positions[0]), (255, 255, 255))
 
-
-            for i, (dept_time, start, dest) in enumerate(self.departures):
-                #~ time_left = dept_time - datetime.now() - time_shift
+            counter = 0
+            for dept_time, start, dest in self.departures:
                 time_left_sec =  int((dept_time - datetime.now() - time_shift).total_seconds())
-                #choose color depending on time left
-                # if time_left_sec > 600:
-                #     color = (0, 255, 0)
-                # elif time_left_sec > 300:
-                #     color = (255, 255, 0)
-                # else:
-                #     color = (255, 0, 0)
-                if time_left_sec > 0 and i < self.connection_no/2:
+                if time_left_sec > 0 and counter < self.connection_no:
                     time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
-                    # self.myscreen.addstr(counter*3 + 2, 0, "{:>14} -> {:14}".format(start[:14], dest[:14]), color)
-                    # self.myscreen.addstr(counter*3 + 3, 0, "{:^32}".format(time_left_str), color)
-                    self.write_text(u"{:>14} -> {:14}".format(start, dest), (self.xcenter, self.positions[2*i+1]), get_color(time_left_sec))
-                    self.write_text("{:^32}".format(time_left_str), (self.xcenter, self.positions[2*i+2]), get_color(time_left_sec))
+                    self.write_text(u"{:>14} → {:14}".format(start, dest), (self.xcenter, self.positions[2*counter+1]), get_color(time_left_sec))
+                    self.write_text("{:^32}".format(time_left_str), (self.xcenter, self.positions[2*counter+2]), get_color(time_left_sec))
+                    counter += 1
                 else:
                     if time_left_sec < -60:
                         delete = True
             if delete:
-                # self.myscreen.addstr(0, 0, "Deleting...", curses.color_pair(5))
                 self.write_text("Deleting...", (0, 0), (255, 255, 255))
                 self.departures.pop(0)
                 delete = False
             if len(self.departures) < 12 and not updating:
                 time_for_update = True
-            # self.myscreen.addstr(0, 0, "{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), curses.color_pair(1))
             self.write_text("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (0, self.positions[0]), (255, 255, 255))
             self.blit_and_flip()
             time.sleep(1)
