@@ -188,7 +188,8 @@ class PygameWindow:
         self.fontsize = 30
         self.font = pygame.font.Font(None, self.fontsize)
         self.xcenter = self.background.get_rect().centerx
-        self.determine_line_positions()
+        self.y_offset = 0
+        # self.determine_line_positions()
         # self.text = self.font.render("Hello There", 1, (255, 255, 255))
         # textpos = self.text.get_rect()
         # textpos.centerx = self.background.get_rect().centerx
@@ -199,6 +200,17 @@ class PygameWindow:
         rect = t.get_rect()
         rect.center = pos
         self.background.blit(t, (rect.x, pos[1]))
+
+    def write_messages(self, text_messages):
+        print self.y_offset
+        self.y_offset = min(0, self.y_offset)
+        if len(text_messages) > 240/self.fontsize:
+            self.y_offset = max(-len(text_messages)*self.fontsize + 240, self.y_offset)
+        for i, (message, color) in enumerate(text_messages):
+            pos = (self.xcenter, self.y_offset + i*self.fontsize)
+            self.write_text(message, pos, color)
+
+
 
     def blit_and_flip(self):
         self.screen.blit(self.background, (0, 0))
@@ -212,6 +224,24 @@ class PygameWindow:
         #  minus line for update notification
         self.connection_no = (line_no - 2)/2
 
+    def get_swipe(self):
+        pygame.event.get()
+        if pygame.mouse.get_pressed()[0]:
+            rel = pygame.mouse.get_rel()
+            if self.pressed:
+                return rel
+            else:
+                self.pressed = True
+                return 0, 0
+        else:
+            self.pressed = False
+            return 0, 0
+
+    def check_quit(self):
+        key = pygame.key.get_pressed()
+        if key[K_q]:
+            sys.exit()
+
     def run(self):
         time_shift = timedelta(minutes=0)
         time_for_update = True
@@ -220,6 +250,8 @@ class PygameWindow:
         q = Queue.Queue()
         p = None
         while 1:
+            messages = []
+            messages.append(("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (255, 255, 255)))
             self.background.fill((0, 0, 0))
             if time_for_update:
                 t = datetime.now() + time_shift
@@ -234,7 +266,8 @@ class PygameWindow:
                 try:
                     self.departures = q.get(timeout=0.1)
                     p.join()
-                    self.write_text("Update finished!", (self.xcenter, self.positions[0]), (255, 255, 255))
+                    # self.write_text("Update finished!", (self.xcenter, self.positions[0]), (255, 255, 255))
+                    messages.append(("Update finished!", (255, 255, 255)))
                     updating = False
                     if self.debug:
                         print >> self.log, "got {} from thread".format(self.departures)
@@ -242,28 +275,36 @@ class PygameWindow:
                 except Queue.Empty:
                     if self.debug:
                         print >> self.log, "queue was empty. keep updating"
-                    self.write_text("Updating...", (self.xcenter, self.positions[0]), (255, 255, 255))
+                    # self.write_text("Updating...", (self.xcenter, self.positions[0]), (255, 255, 255))
+                    messages.append(("Updating...", (255, 255, 255)))
 
-            counter = 0
+            # counter = 0
             for dept_time, start, dest in self.departures:
                 time_left_sec =  int((dept_time - datetime.now() - time_shift).total_seconds())
-                if time_left_sec > 0 and counter < self.connection_no:
+                if time_left_sec > 0: # and counter < self.connection_no:
+                    message_color = get_color(time_left_sec)
                     time_left_str = "{:02d}:{:02d}:{:02d}".format(time_left_sec/3600, (time_left_sec%3600)/60, time_left_sec%60)
-                    self.write_text(u"{:>14} → {:14}".format(start, dest), (self.xcenter, self.positions[2*counter+1]), get_color(time_left_sec))
-                    self.write_text("{:^32}".format(time_left_str), (self.xcenter, self.positions[2*counter+2]), get_color(time_left_sec))
-                    counter += 1
+                    # self.write_text(u"{:>14} → {:14}".format(start, dest), (self.xcenter, self.positions[2*counter+1]), message_color)
+                    # self.write_text("{:^32}".format(time_left_str), (self.xcenter, self.positions[2*counter+2]), message_color)
+                    messages.append((u"{:>14} → {:14}".format(start, dest), message_color))
+                    messages.append(("{:^32}".format(time_left_str), message_color))
+                    # counter += 1
                 else:
                     if time_left_sec < -60:
                         delete = True
             if delete:
-                self.write_text("Deleting...", (0, 0), (255, 255, 255))
+                # self.write_text("Deleting...", (0, 0), (255, 255, 255))
+                messages.append(("Deleting...", (255, 255, 255)))
                 self.departures.pop(0)
                 delete = False
             if len(self.departures) < 12 and not updating:
                 time_for_update = True
-            self.write_text("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (0, self.positions[0]), (255, 255, 255))
+            # self.write_text("{:>32}".format((datetime.now() + time_shift).strftime("%H:%M")), (0, self.positions[0]), (255, 255, 255))
+            self.write_messages(messages)
+            y_shift = self.get_swipe()[1]
+            self.y_offset += y_shift
             self.blit_and_flip()
-            time.sleep(1)
+            pygame.time.delay(33)
 
 def get_color(time_left_sec):
     green_time = 1200
