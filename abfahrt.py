@@ -304,6 +304,7 @@ class PygameWindow:
             y_shift = self.get_swipe()[1]
             self.y_offset += y_shift
             self.blit_and_flip()
+            self.check_quit()
             pygame.time.delay(33)
 
 def get_color(time_left_sec):
