@@ -106,6 +106,7 @@ class PygameWindow:
         self.xcenter = self.background.get_rect().centerx
         self.y_offset = 0
         pygame.mouse.set_visible(False)
+        self.quit = False
 
     def write_text(self, text, pos, color):
         t = self.font.render(text, 1, color)
@@ -147,9 +148,13 @@ class PygameWindow:
             return 0, 0
 
     def check_quit(self):
-        key = pygame.key.get_pressed()
-        if key[K_q]:
-            sys.exit()
+        for ev in pygame.event.get():
+            if ev.type == QUIT:
+                self.quit = True
+                break
+        else:
+            if pygame.key.get_pressed()[K_q]:
+                self.quit = True
 
     def run(self):
         time_shift = timedelta(minutes=0)
@@ -209,6 +214,9 @@ class PygameWindow:
             self.blit_and_flip()
             self.check_quit()
             pygame.time.delay(33)
+            if self.quit:
+                break
+        pygame.quit()
 
 
 def get_color(time_left_sec):
